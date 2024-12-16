@@ -1,0 +1,20 @@
+# Sample configuration for image placement script
+
+# Path to the base (big) image
+big_file = "/path/to/your/base/image.jpg"
+
+# Glob pattern for small images
+little_files = "/path/to/small/images/*.png"
+
+# Bounding box for placing small images (Width:Height:Left:Top)
+[bounding_box]
+width = 800
+height = 200
+left = 100
+top = 500
+
+# Optional: gap between images (default is 5 if not specified)
+gap = 10
+
+# Output file path
+out_file = "/path/to/output/image.jpg"
