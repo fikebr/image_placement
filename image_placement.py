@@ -146,7 +146,7 @@ def main(config_path):
     Args:
         config_path (str): Path to the configuration TOML file
     """
-    setup_logging()
+    setup_logging(log_to_console=True)  
     
     try:
         # Load configuration
