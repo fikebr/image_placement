@@ -17,7 +17,7 @@ def setup_logging(log_to_console=False):
     for handler in logging.root.handlers[:]:
         logging.root.removeHandler(handler)
     
-    logger = logging.getLogger()
+    logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
     
     # Create the log directory if it doesn't exist
@@ -41,3 +41,5 @@ def setup_logging(log_to_console=False):
         console_handler = logging.StreamHandler()
         console_handler.setFormatter(logging.Formatter(LOG_FORMAT, DATE_FORMAT))
         logger.addHandler(console_handler)
+        
+    return logger

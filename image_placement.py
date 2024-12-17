@@ -7,9 +7,8 @@ from PIL import Image
 # Usage:
 import logging
 from log import setup_logging
-setup_logging()
-# logging.error("This is an error message")
 
+log = setup_logging(log_to_console=True)
 
 
 # def setup_logging():
@@ -43,10 +42,10 @@ def load_config(config_path):
         with open(config_path, 'r') as f:
             return toml.load(f)
     except FileNotFoundError:
-        logging.error(f"Config file not found: {config_path}")
+        log.error(f"Config file not found: {config_path}")
         sys.exit(1)
     except toml.TomlDecodeError as e:
-        logging.error(f"Error parsing TOML file: {e}")
+        log.error(f"Error parsing TOML file: {e}")
         sys.exit(1)
 
 def find_and_sort_little_files(little_files_pattern):
@@ -62,10 +61,10 @@ def find_and_sort_little_files(little_files_pattern):
     try:
         little_files = sorted(glob.glob(little_files_pattern))
         if not little_files:
-            logging.warning(f"No files found matching pattern: {little_files_pattern}")
+            log.warning(f"No files found matching pattern: {little_files_pattern}")
         return little_files
     except Exception as e:
-        logging.error(f"Error finding little files: {e}")
+        log.error(f"Error finding little files: {e}")
         return []
 
 def calculate_little_image_size(big_image, little_files, bounding_box, gap):
@@ -136,7 +135,7 @@ def place_little_images(big_image, little_files, bounding_box, little_image_size
         
         return big_image
     except Exception as e:
-        logging.error(f"Error placing little images: {e}")
+        log.error(f"Error placing little images: {e}")
         raise
 
 def main(config_path):
@@ -146,17 +145,17 @@ def main(config_path):
     Args:
         config_path (str): Path to the configuration TOML file
     """
-    setup_logging(log_to_console=True)  
     
     try:
         # Load configuration
         config = load_config(config_path)
         
-        logging.info(f"Configuration loaded from {config_path}")
-        logging.debug(f"Configuration: {config}")
+        log.info(f"Configuration loaded from {config_path}")
+        log.debug(f"Configuration: {config}")
         
         # Find and sort little files
         little_files = find_and_sort_little_files(config['little_files'])
+        log.debug(f"Little files: {little_files}")
         
         # Open big image
         big_image = Image.open(config['big_file']).copy()
@@ -168,7 +167,8 @@ def main(config_path):
             config['bounding_box'], 
             config.get('gap', 5)
         )
-        
+        log.debug(f"Little image size: {little_image_size}")
+
         # Place little images
         modified_image = place_little_images(
             big_image, 
@@ -180,10 +180,14 @@ def main(config_path):
         
         # Save output image
         modified_image.save(config['out_file'])
-        logging.info(f"Image successfully processed. Output saved to {config['out_file']}")
+        log.info(f"Image successfully processed. Output saved to {config['out_file']}")
     
     except Exception as e:
-        logging.error(f"Unexpected error occurred: {e}")
+        log.error("Error occurred during main:")
+        log.error(f"    Type: {type(e).__name__}")
+        log.error(f"    Message: {str(e)}")
+        log.error(f"    Arguments: {e.args}")
+        log.error(f"    Traceback: {e.__traceback__}")
         sys.exit(1)
 
 if __name__ == "__main__":
