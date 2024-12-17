@@ -1,16 +1,16 @@
 # Sample configuration for image placement script
 
 # Path to the base (big) image
-big_file = "E:\\Dropbox\\Dev\\Notes\\python\\base_image_plus\\test\\river_mountains.png"
+big_file = "test\\river_mountains.png"
 
 # Glob pattern for small images
-little_files = "E:\\Dropbox\\Dev\\Notes\\python\\base_image_plus\\test\\small\\*.png"
+little_files = "test\\small\\*.png"
 
 # Optional: gap between images (default is 5 if not specified)
 gap = 10
 
 # Output file path
-out_file = "E:\\Dropbox\\Dev\\Notes\\python\\base_image_plus\\test\\river_mountains_out.png"
+out_file = "test\\river_mountains_out.png"
 
 
 # Bounding box for placing small images (Width:Height:Left:Top)
