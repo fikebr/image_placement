@@ -6,6 +6,13 @@ big_file = "E:\\Dropbox\\Dev\\Notes\\python\\base_image_plus\\test\\river_mounta
 # Glob pattern for small images
 little_files = "E:\\Dropbox\\Dev\\Notes\\python\\base_image_plus\\test\\small\\*.png"
 
+# Optional: gap between images (default is 5 if not specified)
+gap = 10
+
+# Output file path
+out_file = "E:\\Dropbox\\Dev\\Notes\\python\\base_image_plus\\test\\river_mountains_out.png"
+
+
 # Bounding box for placing small images (Width:Height:Left:Top)
 [bounding_box]
 width = 776
@@ -13,9 +20,4 @@ height = 340
 left = 60
 top = 60
 
-# Optional: gap between images (default is 5 if not specified)
-gap = 10
-
-# Output file path
-out_file = "E:\\Dropbox\\Dev\\Notes\\python\\base_image_plus\\test\\river_mountains_out.png"
 

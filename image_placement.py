@@ -1,32 +1,12 @@
 import os
 import sys
 import glob
-import logging
 import toml
 from PIL import Image
-# Usage:
-import logging
 from log import setup_logging
 
 log = setup_logging(log_to_console=True)
 
-
-# def setup_logging():
-#     """Configure logging for the application."""
-#     LOG_FORMAT = "%(asctime)s %(levelname)s %(lineno)d - %(message)s"  # %(filename)s
-#     DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
-#     LOG_FILE = "logs/app.log"
-#     LOG_FILE_MAX_SIZE = 10 * 1024 * 1024  # 10 MB
-
-
-
-
-#     logging.basicConfig(
-#         level=logging.INFO,
-#         format='%(asctime)s - %(levelname)s: %(message)s',
-#         datefmt='%Y-%m-%d %H:%M:%S'
-#     )
-#     return logging.getLogger(__name__)
 
 def load_config(config_path):
     """
@@ -67,18 +47,17 @@ def find_and_sort_little_files(little_files_pattern):
         log.error(f"Error finding little files: {e}")
         return []
 
-def calculate_little_image_size(big_image, little_files, bounding_box, gap):
+def calculate_little_image_sizes(little_files, bounding_box, gap):
     """
-    Calculate the size to resize little images to fit in the bounding box.
+    Calculate sizes for little images while maintaining aspect ratio.
     
     Args:
-        big_image (Image): Base image
         little_files (list): List of little image paths
         bounding_box (dict): Bounding box specifications
         gap (int): Gap between images
     
     Returns:
-        tuple: (width, height) for resizing little images
+        list: List of (width, height) tuples for resizing little images
     """
     # Unpack bounding box
     box_width = bounding_box['width']
@@ -90,22 +69,40 @@ def calculate_little_image_size(big_image, little_files, bounding_box, gap):
     
     # Calculate available width for images
     available_width = box_width - total_gap_width
-    image_width = available_width // num_images
     
-    # Calculate height maintaining aspect ratio
-    image_height = int(image_width * (box_height / box_width))
+    # Initialize list to store image sizes
+    image_sizes = []
     
-    return (image_width, image_height)
+    # Calculate size for each image maintaining its aspect ratio
+    for little_file in little_files:
+        # Open original image to get its aspect ratio
+        with Image.open(little_file) as img:
+            orig_width, orig_height = img.size
+        
+        # Calculate width based on even distribution
+        image_width = available_width // num_images
+        
+        # Calculate height maintaining original aspect ratio
+        image_height = int(image_width * (orig_height / orig_width))
+        
+        # Ensure height doesn't exceed bounding box height
+        if image_height > box_height:
+            image_height = box_height
+            image_width = int(image_height * (orig_width / orig_height))
+        
+        image_sizes.append((image_width, image_height))
+    
+    return image_sizes
 
-def place_little_images(big_image, little_files, bounding_box, little_image_size, gap):
+def place_little_images(big_image, little_files, image_sizes, bounding_box, gap):
     """
     Place little images onto the big image.
     
     Args:
         big_image (Image): Base image to modify
         little_files (list): List of little image paths
+        image_sizes (list): List of (width, height) for little images
         bounding_box (dict): Bounding box specifications
-        little_image_size (tuple): Size to resize little images
         gap (int): Gap between images
     
     Returns:
@@ -113,27 +110,37 @@ def place_little_images(big_image, little_files, bounding_box, little_image_size
     """
     try:
         # Unpack bounding box
-        box_left = bounding_box['left']
-        box_top = bounding_box['top']
-        box_height = bounding_box['height']
+        
+        log.debug(f"Bounding box: {bounding_box}")
+        log.debug(f"Left: {bounding_box['left']}")
+        box_left = int(bounding_box['left'])
+        box_top = int(bounding_box['top'])
+        box_height = int(bounding_box['height'])
         
         # Calculate vertical centering
         vertical_center = box_top + (box_height // 2)
         
-        for idx, little_file in enumerate(little_files):
-            little_img = Image.open(little_file)
-            little_img_resized = little_img.resize(little_image_size)
+        # Create a new image for compositing
+        big_image_with_transparency = big_image.convert("RGBA")
+        
+        for idx, (little_file, (width, height)) in enumerate(zip(little_files, image_sizes)):
+            little_img = Image.open(little_file).convert("RGBA")  # Ensure image is in RGBA mode
+            little_img_resized = little_img.resize((width, height), Image.LANCZOS)
             
             # Calculate x position
-            x_pos = box_left + (idx * (little_image_size[0] + gap))
+            x_pos = box_left + (idx * (width + gap))
             
             # Calculate y position (centered vertically)
-            y_pos = vertical_center - (little_image_size[1] // 2)
+            y_pos = vertical_center - (height // 2)
             
-            # Paste the little image
-            big_image.paste(little_img_resized, (x_pos, y_pos))
+            # Create a mask for the little image
+            mask = Image.new("RGBA", big_image_with_transparency.size)
+            mask.paste(little_img_resized, (x_pos, y_pos))
+            
+            # Paste the little image using alpha_composite
+            big_image_with_transparency = Image.alpha_composite(big_image_with_transparency, mask)
         
-        return big_image
+        return big_image_with_transparency
     except Exception as e:
         log.error(f"Error placing little images: {e}")
         raise
@@ -150,9 +157,6 @@ def main(config_path):
         # Load configuration
         config = load_config(config_path)
         
-        log.info(f"Configuration loaded from {config_path}")
-        log.debug(f"Configuration: {config}")
-        
         # Find and sort little files
         little_files = find_and_sort_little_files(config['little_files'])
         log.debug(f"Little files: {little_files}")
@@ -161,8 +165,7 @@ def main(config_path):
         big_image = Image.open(config['big_file']).copy()
         
         # Calculate little image size
-        little_image_size = calculate_little_image_size(
-            big_image, 
+        little_image_size = calculate_little_image_sizes(
             little_files, 
             config['bounding_box'], 
             config.get('gap', 5)
@@ -171,23 +174,21 @@ def main(config_path):
 
         # Place little images
         modified_image = place_little_images(
-            big_image, 
-            little_files, 
-            config['bounding_box'], 
-            little_image_size, 
-            config.get('gap', 5)
+            big_image = big_image, 
+            little_files = little_files, 
+            image_sizes = little_image_size, 
+            bounding_box = config['bounding_box'], 
+            gap = config.get('gap', 5)
         )
         
         # Save output image
+        log.debug(f"Saving output image to {config['out_file']}")
         modified_image.save(config['out_file'])
         log.info(f"Image successfully processed. Output saved to {config['out_file']}")
     
     except Exception as e:
-        log.error("Error occurred during main:")
-        log.error(f"    Type: {type(e).__name__}")
-        log.error(f"    Message: {str(e)}")
-        log.error(f"    Arguments: {e.args}")
-        log.error(f"    Traceback: {e.__traceback__}")
+        log.error(f"Error occurred :: Config :: {config}")
+        log.error(f"Error occurred :: Type: {type(e).__name__} :: Message: {str(e)}", exc_info=sys.exc_info())
         sys.exit(1)
 
 if __name__ == "__main__":
