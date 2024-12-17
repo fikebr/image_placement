@@ -4,15 +4,30 @@ import glob
 import logging
 import toml
 from PIL import Image
+# Usage:
+import logging
+from log import setup_logging
+setup_logging()
+# logging.error("This is an error message")
 
-def setup_logging():
-    """Configure logging for the application."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s: %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
-    )
-    return logging.getLogger(__name__)
+
+
+# def setup_logging():
+#     """Configure logging for the application."""
+#     LOG_FORMAT = "%(asctime)s %(levelname)s %(lineno)d - %(message)s"  # %(filename)s
+#     DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+#     LOG_FILE = "logs/app.log"
+#     LOG_FILE_MAX_SIZE = 10 * 1024 * 1024  # 10 MB
+
+
+
+
+#     logging.basicConfig(
+#         level=logging.INFO,
+#         format='%(asctime)s - %(levelname)s: %(message)s',
+#         datefmt='%Y-%m-%d %H:%M:%S'
+#     )
+#     return logging.getLogger(__name__)
 
 def load_config(config_path):
     """
@@ -131,11 +146,14 @@ def main(config_path):
     Args:
         config_path (str): Path to the configuration TOML file
     """
-    logger = setup_logging()
+    setup_logging()
     
     try:
         # Load configuration
         config = load_config(config_path)
+        
+        logging.info(f"Configuration loaded from {config_path}")
+        logging.debug(f"Configuration: {config}")
         
         # Find and sort little files
         little_files = find_and_sort_little_files(config['little_files'])
@@ -162,10 +180,10 @@ def main(config_path):
         
         # Save output image
         modified_image.save(config['out_file'])
-        logger.info(f"Image successfully processed. Output saved to {config['out_file']}")
+        logging.info(f"Image successfully processed. Output saved to {config['out_file']}")
     
     except Exception as e:
-        logger.error(f"Unexpected error occurred: {e}")
+        logging.error(f"Unexpected error occurred: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":
