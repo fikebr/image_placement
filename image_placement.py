@@ -111,8 +111,6 @@ def place_little_images(big_image, little_files, image_sizes, bounding_box, gap)
     try:
         # Unpack bounding box
         
-        log.debug(f"Bounding box: {bounding_box}")
-        log.debug(f"Left: {bounding_box['left']}")
         box_left = int(bounding_box['left'])
         box_top = int(bounding_box['top'])
         box_height = int(bounding_box['height'])
@@ -159,7 +157,6 @@ def main(config_path):
         
         # Find and sort little files
         little_files = find_and_sort_little_files(config['little_files'])
-        log.debug(f"Little files: {little_files}")
         
         # Open big image
         big_image = Image.open(config['big_file']).copy()
@@ -170,7 +167,6 @@ def main(config_path):
             config['bounding_box'], 
             config.get('gap', 5)
         )
-        log.debug(f"Little image size: {little_image_size}")
 
         # Place little images
         modified_image = place_little_images(
@@ -182,7 +178,6 @@ def main(config_path):
         )
         
         # Save output image
-        log.debug(f"Saving output image to {config['out_file']}")
         modified_image.save(config['out_file'])
         log.info(f"Image successfully processed. Output saved to {config['out_file']}")
     
