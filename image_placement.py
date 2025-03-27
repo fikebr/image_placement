@@ -1,32 +1,56 @@
-import os
 import sys
 import glob
 import toml
 from PIL import Image
 from log import setup_logging
+from args import get_options
 
+
+args = get_options()
 log = setup_logging(log_to_console=True)
 
 
-def load_config(config_path):
+def load_config():
     """
     Load configuration from a TOML file.
-    
-    Args:
-        config_path (str): Path to the TOML configuration file
-    
-    Returns:
-        dict: Parsed configuration
     """
-    try:
-        with open(config_path, 'r') as f:
-            return toml.load(f)
-    except FileNotFoundError:
-        log.error(f"Config file not found: {config_path}")
-        sys.exit(1)
-    except toml.TomlDecodeError as e:
-        log.error(f"Error parsing TOML file: {e}")
-        sys.exit(1)
+
+    config = {}
+    if args.config:
+        try:
+            with open(args.config, 'r') as f:
+                config = toml.load(f)
+        except FileNotFoundError:
+            log.error(f"Config file not found: {args.config}")
+            sys.exit(1)
+        except toml.TomlDecodeError as e:
+            log.error(f"Error parsing TOML file: {e}")
+            sys.exit(1)
+
+    if args.big_file:
+        config['big_file'] = args.big_file
+
+    if args.little_files:
+        config['little_files'] = args.little_files
+
+    if args.output_file:
+        config['out_file'] = args.output_file
+        
+    if args.gap != config.get('gap') and args.gap != 10:
+        config['gap'] = args.gap
+
+    if args.box:
+        x, y, w, h = map(int, args.box.split(','))
+        config['bounding_box']['width'] = w
+        config['bounding_box']['height'] = h
+        config['bounding_box']['left'] = x
+        config['bounding_box']['top'] = y
+
+
+    if args.gap:
+        config['gap'] = args.gap
+
+    return config
 
 def find_and_sort_little_files(little_files_pattern):
     """
@@ -143,7 +167,7 @@ def place_little_images(big_image, little_files, image_sizes, bounding_box, gap)
         log.error(f"Error placing little images: {e}")
         raise
 
-def main(config_path):
+def main():
     """
     Main function to process images based on configuration.
     
@@ -153,18 +177,20 @@ def main(config_path):
     
     try:
         # Load configuration
-        config = load_config(config_path)
+        config = load_config()
+        # log.info(f"Config: {config}")
+        # log.info(f"gap: {config.get('gap', 5)}")
         
         # Find and sort little files
-        little_files = find_and_sort_little_files(config['little_files'])
+        little_files = find_and_sort_little_files(config.get('little_files', ''))
         
         # Open big image
-        big_image = Image.open(config['big_file']).copy()
+        big_image = Image.open(config.get('big_file', '')).copy()
         
         # Calculate little image size
         little_image_size = calculate_little_image_sizes(
             little_files, 
-            config['bounding_box'], 
+            config.get('bounding_box', {}), 
             config.get('gap', 5)
         )
 
@@ -187,8 +213,5 @@ def main(config_path):
         sys.exit(1)
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python script.py <config_path>")
-        sys.exit(1)
     
-    main(sys.argv[1])
+    main()
