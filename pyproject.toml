@@ -1,10 +1,23 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
-name = "base-image-plus"
+name = "image-placement"
 version = "0.1.0"
-description = "Add your description here"
+description = "Image Placement - A tool to place small images in a grid on a larger image"
 readme = "README.md"
-requires-python = ">=3.12"
-dependencies = [
-    "pillow>=11.0.0",
-    "toml>=0.10.2",
+requires-python = ">=3.7"
+authors = [
+    { name = "Brad Fike" }
 ]
+dependencies = [
+    "Pillow>=10.0.0",  # For image processing
+    "toml>=0.10.2",    # For config file parsing
+]
+
+[project.scripts]
+image-placement = "image_placement:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["image_placement.py"]

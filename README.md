@@ -1,6 +1,6 @@
 # Image Placement
 
-This script is used to place little images onto a big image.
+Image Placement - A tool to place small images in a grid on a larger image
 
 ## Usage
 
